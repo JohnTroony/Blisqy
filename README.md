@@ -21,8 +21,8 @@ Options:
   --sleeptime=SLEEP     Sleep-Time for blind-SQLi query (default : 0.9)
 ```
 ## To Do :
-* Intergrate an inteligent Fuzzer for hunting SQL injection vulnerabrity(ies) of HTTP Headers
-* Support testing for URLs and WEB Forms fields.
+* Intergrate an inteligent Fuzzer for hunting SQL injection vulnerabrity(ies) on HTTP Headers and Web Elements
+* Support Blind-SQLi enumeration of URLs and WEB Elements apart from HTTP Headers.
 
 
 ## Assumptions :
@@ -45,19 +45,19 @@ In other words, this argument is set.
 [-] photoblog
 
 
-[+] Getting  number of TABLES ...
+[+] Getting  number of TABLES from schema
 [-] 4
 
 
-[+] Getting  all TABLE NAMES from Schema ...
+[+] Getting  all TABLE NAMES from Schema
 [-] categories
 [-] pictures
 [-] stats
 [-] users
 
 
-[+] Getting  Columns and Rows from Schema ....
-Preparing to get  all Columns in Table : categories .
+[+] Getting Columns and Rows from Schema
+Preparing to get  all Columns in Table : categories
 =====================================================
 
 
@@ -68,20 +68,20 @@ id
 title
 Number of Rows on Table : categories 
 3
-Preparing to get  all Columns in Table : pictures .
+Preparing to get  all Columns in Table : pictures 
 =====================================================
 
 
-[+] Getting   Number of Columns in a pictures .
+[+] Getting Number of Columns in Table : pictures
 [-] 4
-[+] Getting  all Column Names in Table : pictures .
+[+] Getting  all Column Names in Table : pictures
 cat
 id
 img
 title
 Number of Rows on Table : pictures 
 3
-Preparing to get  all Columns in Table : stats .
+Preparing to get  all Columns in Table : stats
 =====================================================
 
 
@@ -96,7 +96,7 @@ Preparing to get  all Columns in Table : users .
 =====================================================
 
 
-[+] Getting   Number of Columns in a users .
+[+] Getting   Number of Columns in a users
 [-] 3
 [+] Getting  all Column Names in Table : users .
 id
