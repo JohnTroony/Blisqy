@@ -40,7 +40,7 @@ Target parameters should be in a Dictionary/JSON format, for example (*Note the 
     }
 ```
 
-Invoking the fuzzer once the target parameters are provided is as follow :
+Invoking the fuzzer once the target parameters are provided is as shown below :
 
 ```python
 vulns = blindSeeker(target_params)
@@ -53,9 +53,9 @@ You can checkout `FindBlindSpot.py` for this example provided.
 
 If you are successful, you should get a report of the 'injectable' tests carried out. Please note, as much as Blisqy tries to compensate for network lags and congestion while testing it's is important to proof-test the reported positive tests before proceeding.
 
-Below in sample report:
+Below is a sample report:
 
-```json
+```text
 =================== [ Key Terms] ===================
 Index = Configured Constant (Delay)
 Base Index Record = Server Ping Before Fuzzing
@@ -105,7 +105,7 @@ from lib.blindexploit import SqlEngine
 
 Next, you will need to provide details of your target along with it's target parameters for exploitation. Below is a sample implementation of exploiting the found blind sql injection found by the fuzzer:
 
-The target data should be in a Dictionary/JSON format specifying the server, port, the found vulnerable header and it's value (some applications will need or check for a certain value).
+The target data should be in a Dictionary/JSON format specifying the server, port, the found vulnerable header and it's value (some applications will need or check for a certain value). Also *Note the variable data-types*.
 
 ```python
 target = {
@@ -177,7 +177,7 @@ You can alert me of anything interesting you've found with Blisqy or what you th
 
 - Share your ideas and wishlist,
 - Spot a typo? Lemme know,
-- Found ways we ca optimise Blisqy?,
+- Found ways we can optimise Blisqy?,
 - Suggest ways to incorporate support for other DBMS.
 
 ### 1.4.2. Reference
